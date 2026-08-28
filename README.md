@@ -71,3 +71,13 @@ The model supports:
 - Long-running case identification
 - Process-specific starting points
 
+### KPI Performance
+
+Management KPIs provide visibility into:
+
+- Procurement performance against target
+- Number of completed cases
+- Number of open cases
+- Cases outside expected turnaround time
+- Performance trends over time
+- Operational workload
