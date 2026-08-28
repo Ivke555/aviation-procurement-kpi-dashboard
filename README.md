@@ -206,6 +206,24 @@ Automation reduces manual reporting effort and improves consistency between repo
 
 ---
 
+## Dashboard Preview
+
+The screenshots below use **synthetic portfolio data** and are based on the structure of the original Power BI solution.
+
+### Executive Procurement Dashboard
+
+![Executive Procurement Dashboard](executive-dashboard-portfolio-safe.png)
+
+The executive view combines procurement KPI performance, turnaround-time trends, process-step timing, open and closed workload, and target achievement in a single management-level dashboard.
+
+### RO Creation Trend Analysis
+
+![RO Created Trend](ro-created-trend-portfolio-safe.png)
+
+This view compares repair-order creation trends across years and months, including previous-year comparisons and month-over-month percentage differences.
+
+---
+
 ## Repository Structure
 
 ```text
@@ -213,10 +231,8 @@ aviation-procurement-kpi-dashboard/
 │
 ├── README.md
 │
-├── screenshots/
-│   ├── executive-dashboard.png
-│   ├── kpi-overview.png
-│   └── tat-analysis.png
+├── executive-dashboard-portfolio-safe.png
+├── ro-created-trend-portfolio-safe.png
 │
 ├── sql/
 │   ├── reporting-model.sql
@@ -238,24 +254,6 @@ aviation-procurement-kpi-dashboard/
 └── docs/
     └── architecture.md
 ```
-
----
-
-## Dashboard Preview
-
-Sanitized dashboard screenshots will be added to this repository.
-
-### Executive Procurement Dashboard
-
-*Coming soon*
-
-### Procurement TAT Analysis
-
-*Coming soon*
-
-### Data Quality & Exceptions
-
-*Coming soon*
 
 ---
 
@@ -355,8 +353,7 @@ Key benefits include:
 
 The public portfolio version will gradually include:
 
-- Sanitized Power BI screenshots
-- Example SQL reporting models
+- Sanitized SQL reporting models
 - Example DAX measures
 - Power Query transformations
 - Synthetic procurement data
