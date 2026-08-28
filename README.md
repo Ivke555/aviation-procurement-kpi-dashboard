@@ -51,3 +51,23 @@ flowchart LR
 
     B --> H[Data Quality Checks]
     H --> I[Automated Notifications]
+
+```
+
+---
+
+## Key Analytics Areas
+
+### Procurement Turnaround Time
+
+Measures the time required to progress procurement and repair activity through defined operational milestones.
+
+The model supports:
+
+- Completed-case TAT
+- Open-case ageing
+- Average and median TAT
+- Target-performance measurement
+- Long-running case identification
+- Process-specific starting points
+
