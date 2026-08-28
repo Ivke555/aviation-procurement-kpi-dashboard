@@ -1,6 +1,6 @@
 # Aviation Procurement KPI Dashboard
 
-End-to-end aviation procurement analytics solution built with **Power BI, SQL, Power Query and DAX** to transform operational procurement data into management KPIs, exception reporting and actionable performance insights.
+End-to-end aviation procurement analytics solution built with **Power BI, SQL, Power Query and DAX** to transform operational procurement data into management KPIs, operational process analysis and actionable performance insights.
 
 > **Portfolio version:** This repository contains a sanitized representation of a real-world analytics solution. Company-confidential data, credentials, customer/vendor identities and proprietary production information are excluded.
 
@@ -8,17 +8,18 @@ End-to-end aviation procurement analytics solution built with **Power BI, SQL, P
 
 ## Project Overview
 
-Procurement performance data is often distributed across multiple operational processes including sourcing, repair orders, receipts, exchanges, logistics and invoicing.
+Procurement performance data is often distributed across multiple operational processes including sourcing, repair orders, logistics, receipts and inventory movements.
 
 The objective of this project was to create a consolidated analytics solution capable of:
 
 - Measuring procurement turnaround time
 - Monitoring operational KPIs
+- Tracking open and completed repair orders
+- Breaking total turnaround time into operational process stages
 - Identifying long-running and exceptional cases
-- Tracking open and completed procurement activity
-- Detecting missing or inconsistent operational data
-- Providing management-level reporting
-- Supporting drill-down from KPIs to individual transactions
+- Analysing repair-order creation trends
+- Supporting management-level reporting
+- Supporting drill-down from KPIs to operational transactions
 - Reducing manual reporting effort
 
 ---
@@ -29,11 +30,11 @@ The objective of this project was to create a consolidated analytics solution ca
 |---|---|
 | Power BI | Dashboarding and interactive analytics |
 | DAX | KPI measures and analytical calculations |
-| SQL | Reporting layer, transformations and validation |
+| SQL | Reporting layer, transformation logic and KPI preparation |
 | Power Query | Data preparation and integration |
-| Excel | Operational reporting and supporting analysis |
+| Excel | Supporting operational analysis |
 | Python | Automated refresh workflows |
-| Power Automate | Scheduled reporting and notifications |
+| Power Automate | Scheduled SQL refresh and reporting processes |
 | Salesforce / AvSight | Operational source data |
 
 ---
@@ -42,19 +43,20 @@ The objective of this project was to create a consolidated analytics solution ca
 
 ```mermaid
 flowchart LR
-    A[Operational Systems] --> B[SQL Reporting Layer]
-    B --> C[Power Query]
-    C --> D[Power BI Data Model]
+    A[Operational Systems] --> B[SQL Staging Layer]
+    B --> C[Operational Business Logic]
+    C --> D[KPI Reporting Tables]
+    D --> E[Power Query]
+    E --> F[Power BI Data Model]
 
-    D --> E[Executive KPI Dashboard]
-    D --> F[Operational Analysis]
-    D --> G[Exception Reporting]
+    F --> G[Executive KPI Dashboard]
+    F --> H[Operational Analysis]
+    F --> I[RO Trend Analysis]
 
-    B --> H[Data Quality Checks]
-    H --> I[Automated Notifications]
+    B --> J[Data Validation & Matching]
 ```
 
-The architecture separates operational source data from the reporting layer so that business rules, transformations and validation logic can be applied consistently before the data reaches Power BI.
+The architecture separates operational source data from the reporting layer so that relationship logic, operational milestones and KPI calculations can be applied consistently before data reaches Power BI.
 
 ---
 
@@ -62,63 +64,90 @@ The architecture separates operational source data from the reporting layer so t
 
 ### Procurement Turnaround Time
 
-Measures the time required to progress procurement and repair activity through defined operational milestones.
+The solution measures the time required for repair and procurement activity to progress through defined operational milestones.
 
-The model supports:
+Rather than treating turnaround time as a single number, the reporting model breaks the process into individual stages.
 
-- Completed-case TAT
-- Open-case ageing
-- Average and median TAT
-- Target-performance measurement
-- Long-running case identification
-- Process-specific starting points
+Example stages include:
+
+- Vendor Selection
+- RO Creation
+- Release Processing
+- Pre-Shipment Processing
+- Transit to Vendor
+- Vendor Quotation
+- Quote Approval
+- Vendor Repair
+- Transit from Vendor
+- Goods Receipt Processing
+- Quarantine / Final Processing
+
+This makes it possible to identify **where time is being spent**, rather than only measuring the final result.
 
 ---
 
 ### KPI Performance
 
-Management KPIs provide visibility into:
+The KPI layer provides visibility into:
 
-- Procurement performance against target
-- Number of completed cases
-- Number of open cases
-- Cases outside expected turnaround time
-- Performance trends over time
-- Operational workload
+- Closed repair orders
+- Open repair orders
+- Average closed RO turnaround time
+- Open-case ageing
+- Performance against turnaround-time target
+- Outlier repair orders
+- Performance trends by year and month
+- Operational process-step timing
 
----
-
-### Exception Analysis
-
-Operational exceptions can be isolated for investigation, including:
-
-- Long-running procurement cases
-- Missing milestone dates
-- Missing operational information
-- Incorrect date sequences
-- Incomplete records
-- Cases requiring manual review
-
-This allows the dashboard to function not only as a reporting tool, but also as an operational management tool.
+A repair order is treated as closed when either the repair-order header or associated repair-order line reaches the applicable completed status.
 
 ---
 
-## Data Quality Framework
+### Target & Outlier Logic
 
-A significant part of the solution focuses on validating operational data before calculating KPIs.
-
-Example validation categories include:
+The portfolio SQL demonstrates the KPI classification logic used by the reporting model.
 
 ```text
-Missing required milestone
-Invalid date sequence
-Incomplete procurement record
-Missing relationship between operational records
-Long-running open transaction
-Reporting record requiring manual review
+KPI TAT < 73 days
+        ↓
+Within target
+
+KPI TAT > 150 days
+        ↓
+TAT outlier
 ```
 
-Separating data-quality checks from KPI calculations helps prevent incomplete or incorrect operational records from producing misleading performance results.
+The thresholds are applied at the reporting layer so Power BI receives KPI-ready records.
+
+---
+
+## Operational Relationship Logic
+
+Operational data does not always contain a single perfect relationship between records.
+
+One example is the matching of docking events to repair-order activity.
+
+The SQL model evaluates multiple relationship paths:
+
+```text
+Repair Order Line match
+        ↓
+Priority 1
+
+Repair Order match
+        ↓
+Priority 2
+
+Return AWB match
+        ↓
+Priority 3
+```
+
+The strongest available evidence is selected.
+
+If multiple records exist at the same priority, the earliest valid event is selected, with a deterministic identifier used as the final tie-breaker.
+
+This allows incomplete operational relationships to be resolved systematically while keeping the matching logic auditable.
 
 ---
 
@@ -127,15 +156,19 @@ Separating data-quality checks from KPI calculations helps prevent incomplete or
 ```text
 Operational Data
       ↓
-SQL Reporting Layer
+SQL Helper / Stage Tables
       ↓
-Business Rules & Validation
+Relationship Matching
       ↓
-Power Query Transformations
+Operational Milestones
+      ↓
+Process-Step Calculations
+      ↓
+Repair Order KPI Layer
+      ↓
+Power Query
       ↓
 Power BI Data Model
-      ↓
-DAX Measures
       ↓
 Executive & Operational Dashboards
 ```
@@ -144,65 +177,29 @@ Executive & Operational Dashboards
 
 ## KPI Logic
 
-A simplified representation of the KPI calculation process is:
+A simplified representation of the calculation process is:
 
 ```text
-Identify procurement process type
+Identify procurement / repair process
               ↓
-Determine applicable starting milestone
+Determine applicable start milestone
               ↓
-Determine completion / current milestone
+Determine operational completion milestone
               ↓
-Calculate turnaround time
+Calculate process-step durations
+              ↓
+Calculate total KPI turnaround time
+              ↓
+Determine open / closed status
               ↓
 Compare against KPI target
               ↓
-Classify performance
+Identify outliers
               ↓
-Aggregate for reporting
+Aggregate for Power BI
 ```
 
-Different procurement processes may require different starting points, which are handled within the reporting logic before KPI results are produced.
-
----
-
-## Example Reporting Outputs
-
-The solution supports multiple levels of analysis.
-
-### Executive View
-
-Designed for management-level monitoring of:
-
-- Overall KPI performance
-- Procurement TAT
-- Open workload
-- Outliers
-- Performance trends
-- Exceptions requiring attention
-
-### Operational View
-
-Provides drill-down into individual procurement transactions and their milestone history.
-
-### Data Quality View
-
-Highlights incomplete or inconsistent operational records that could affect reporting accuracy.
-
----
-
-## Automation
-
-The reporting environment also includes automated processes supporting:
-
-- Dataset refresh
-- Excel and reporting refresh
-- Data-quality checks
-- Exception reporting
-- Recurring operational notifications
-- Scheduled management reporting
-
-Automation reduces manual reporting effort and improves consistency between reporting cycles.
+Different operational processes can require different milestone logic before KPI results are produced.
 
 ---
 
@@ -214,13 +211,164 @@ The screenshots below use **synthetic portfolio data** and are based on the stru
 
 ![Executive Procurement Dashboard](executive-dashboard-portfolio-safe.png)
 
-The executive view combines procurement KPI performance, turnaround-time trends, process-step timing, open and closed workload, and target achievement in a single management-level dashboard.
+The executive dashboard combines:
+
+- Closed and open repair-order KPIs
+- Procurement turnaround time
+- KPI target achievement
+- Monthly performance trends
+- Process-step timing
+- Open workload
+- Outlier analysis
+- Operational performance segmentation
+
+---
 
 ### RO Creation Trend Analysis
 
 ![RO Created Trend](ro-created-trend-portfolio-safe.png)
 
-This view compares repair-order creation trends across years and months, including previous-year comparisons and month-over-month percentage differences.
+The RO trend view analyses repair-order creation volumes across years and months and supports comparisons with previous periods.
+
+A key modelling decision is that **repair-order creation counts are sourced directly from repair-order headers**, rather than from the KPI fact table.
+
+This prevents differences in analytical grain from distorting historical creation volumes.
+
+---
+
+## SQL Portfolio Examples
+
+The repository contains three sanitized SQL examples derived from the reporting architecture.
+
+### 1. Reporting Model
+
+📄 [View reporting-model.sql](reporting-model.sql)
+
+Demonstrates:
+
+- Helper and staging tables
+- Operational entity joins
+- Receipt aggregation
+- Inventory milestone reconstruction
+- Release aggregation
+- Priority-based docking matching
+- Deterministic best-record selection
+- Process-step calculations
+- KPI-ready operational data preparation
+
+---
+
+### 2. KPI Calculations
+
+📄 [View kpi-calculations.sql](kpi-calculations.sql)
+
+Demonstrates:
+
+- One-row-per-repair-order KPI modelling
+- Open / closed classification
+- Open-case ageing
+- KPI turnaround-time calculation
+- Target achievement logic
+- Outlier classification
+- Operational process-step aggregation
+- Annual KPI summaries
+
+---
+
+### 3. RO Creation Trend
+
+📄 [View ro-created-trend.sql](ro-created-trend.sql)
+
+Demonstrates:
+
+- Repair-order header modelling
+- Repair-order-line status aggregation
+- Cancelled-order handling
+- Created / open / closed classification
+- Monthly aggregation
+- Yearly aggregation
+- Power BI trend-table preparation
+
+---
+
+## SQL Architecture
+
+The reporting model follows a layered approach:
+
+```text
+Source Tables
+     │
+     ├── Repair Orders
+     ├── Repair Order Lines
+     ├── Inventory
+     ├── Receipts
+     ├── Releases
+     ├── Docking Events
+     └── Operational History
+              ↓
+        Helper Tables
+              ↓
+      Relationship Logic
+              ↓
+     Operational Measures
+              ↓
+        KPI Flat Table
+              ↓
+      KPI Aggregations
+              ↓
+           Power BI
+```
+
+This approach moves complex operational logic out of Power BI and into a reusable reporting layer.
+
+---
+
+## Data Modelling Decisions
+
+Several modelling decisions were important to the solution.
+
+### One Reporting Grain
+
+Operational source systems can contain multiple lines and events for a single repair order.
+
+The KPI layer consolidates these into a consistent repair-order reporting grain before the data is consumed by Power BI.
+
+### Closed Status
+
+A repair order can be considered complete based on either the repair-order header or the underlying repair-order-line status.
+
+The model therefore evaluates both levels.
+
+### Priority-Based Relationships
+
+Where several possible relationships exist, matching evidence is explicitly ranked instead of relying on an arbitrary join.
+
+### Source-of-Truth Separation
+
+Different analytical questions can require different source grains.
+
+For example:
+
+- KPI performance uses the KPI reporting model.
+- Repair-order creation counts use repair-order headers as the source of truth.
+
+This avoids using one analytical fact table for every business question.
+
+---
+
+## Automation
+
+The production reporting environment also includes automated processes supporting:
+
+- SQL reporting-table refresh
+- Power BI dataset refresh
+- Excel reporting refresh
+- Data-quality checks
+- Exception reporting
+- Scheduled operational reporting
+- Refresh-status logging
+
+This reduces manual reporting effort and improves consistency between reporting cycles.
 
 ---
 
@@ -234,82 +382,48 @@ aviation-procurement-kpi-dashboard/
 ├── executive-dashboard-portfolio-safe.png
 ├── ro-created-trend-portfolio-safe.png
 │
-├── sql/
-│   ├── reporting-model.sql
-│   ├── kpi-calculations.sql
-│   └── validation-checks.sql
-│
-├── power-query/
-│   └── transformations.m
-│
-├── dax/
-│   └── measures.md
-│
-├── automation/
-│   └── refresh-example.py
-│
-├── sample-data/
-│   └── sample-procurement-data.csv
-│
-└── docs/
-    └── architecture.md
+├── reporting-model.sql
+├── kpi-calculations.sql
+└── ro-created-trend.sql
 ```
 
----
-
-## SQL Reporting Layer
-
-The SQL layer is responsible for consolidating operational records and preparing them for reporting.
-
-Typical responsibilities include:
-
-- Joining operational entities
-- Standardizing identifiers
-- Applying process-specific business rules
-- Calculating reporting milestones
-- Creating KPI-ready datasets
-- Identifying missing relationships
-- Flagging data-quality issues
-- Preparing optimized reporting tables
-
-Sanitized examples of this logic will be included in the `sql/` folder.
+Additional portfolio examples may be added later.
 
 ---
 
 ## Power Query
 
-Power Query is used as an additional transformation layer between source/reporting datasets and the Power BI model.
+Power Query is used as an additional transformation layer between SQL reporting datasets and the Power BI model.
 
-Typical transformations include:
+Typical responsibilities include:
 
 - Data type standardization
 - Column cleanup
-- Dataset merging
+- Dataset integration
+- Reporting-specific filtering
 - Additional classification logic
-- Filtering
-- Exception categorization
-- Supporting calculated attributes
+- Supporting analytical attributes
 
-Example transformations will be included in the `power-query/` folder.
+A sanitized Power Query example may be added to the repository later.
 
 ---
 
 ## DAX
 
-DAX measures provide the analytical layer inside Power BI.
+DAX provides the analytical measure layer inside Power BI.
 
-Example measure areas include:
+Typical measure areas include:
 
-- KPI %
-- Completed cases
-- Open cases
+- KPI percentage
+- Closed repair orders
+- Open repair orders
 - Average TAT
-- Median TAT
 - Target achievement
 - Outlier counts
-- Period-over-period trends
+- Period comparisons
+- Trend calculations
 
-Sanitized examples will be included in the `dax/` folder.
+Sanitized DAX examples may be added later.
 
 ---
 
@@ -318,47 +432,50 @@ Sanitized examples will be included in the `dax/` folder.
 This project demonstrates practical experience with:
 
 - Power BI development
-- DAX
 - SQL
+- DAX
 - Power Query
 - Data modelling
 - KPI design
+- Operational process modelling
+- Relationship resolution
 - Data-quality validation
-- Operational reporting
-- Data integration
+- Reporting architecture
 - Process automation
 - Procurement analytics
 - Aviation supply-chain analytics
-- Reporting architecture
 
 ---
 
 ## Business Value
 
-The solution helps convert fragmented operational data into a structured performance-management framework.
+The solution converts fragmented operational data into a structured procurement-performance framework.
 
 Key benefits include:
 
 - Improved visibility of procurement performance
-- Faster identification of operational bottlenecks
-- Better management of long-running cases
+- Clear measurement of turnaround time
+- Identification of operational bottlenecks
+- Visibility into individual process stages
+- Faster identification of long-running cases
+- Consistent KPI calculations
+- Improved operational reporting
 - Reduced manual reporting work
-- More consistent KPI calculations
-- Improved data-quality monitoring
-- Easier drill-down from management KPIs to individual transactions
+- Drill-down from executive KPIs to individual transactions
+- Reliable historical trend reporting
 
 ---
 
 ## Planned Portfolio Additions
 
-The public portfolio version will gradually include:
+Future sanitized examples may include:
 
-- Sanitized SQL reporting models
-- Example DAX measures
+- DAX measures
 - Power Query transformations
-- Synthetic procurement data
-- Architecture documentation
+- Synthetic procurement datasets
+- Additional architecture documentation
 - Automation examples
+- Data-quality validation examples
 
 ---
 
@@ -368,11 +485,12 @@ All publicly available examples in this repository use either:
 
 - Synthetic data
 - Anonymized identifiers
-- Generic customer and vendor names
-- Simplified business logic
-- Sanitized screenshots
+- Generic customer and vendor references
+- Generalized schema and object names
+- Simplified or sanitized business logic
+- Sanitized dashboard screenshots
 
-No confidential company data, production credentials, proprietary datasets or personally identifiable information are published.
+No confidential company data, production credentials, proprietary datasets, customer/vendor identities or personally identifiable information are published.
 
 ---
 
