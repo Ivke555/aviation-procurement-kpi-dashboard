@@ -323,6 +323,29 @@ This approach moves complex operational logic out of Power BI and into a reusabl
 
 ---
 
+## DAX Portfolio Example
+
+📄 [View dax-measures.md](dax-measures.md)
+
+The repository includes a sanitized DAX measure layer based on the analytical structure of the Power BI model.
+
+It demonstrates:
+
+- Closed and open repair-order measures
+- Average turnaround-time calculations
+- KPI target achievement percentages
+- TAT outlier measures
+- Open-case ageing measures
+- Monthly KPI calculations
+- Repair-order creation trend measures
+- Previous-year same-month comparisons
+- Year-to-date and previous-year time intelligence
+- Process-step reporting using a disconnected `TAT Steps` table and `SWITCH`
+
+The implementation keeps operational relationship and row-level KPI logic in SQL while using DAX for filter-context aggregation, percentages, time intelligence and interactive report behaviour.
+
+---
+
 ## Data Modelling Decisions
 
 Several modelling decisions were important to the solution.
@@ -384,7 +407,8 @@ aviation-procurement-kpi-dashboard/
 │
 ├── reporting-model.sql
 ├── kpi-calculations.sql
-└── ro-created-trend.sql
+├── ro-created-trend.sql
+└── dax-measures.md
 ```
 
 Additional portfolio examples may be added later.
@@ -410,20 +434,22 @@ A sanitized Power Query example may be added to the repository later.
 
 ## DAX
 
-DAX provides the analytical measure layer inside Power BI.
+DAX provides the interactive analytical measure layer inside Power BI.
 
-Typical measure areas include:
+The current sanitized portfolio example includes:
 
-- KPI percentage
-- Closed repair orders
-- Open repair orders
+- KPI percentages
+- Closed repair-order measures
+- Open repair-order measures
 - Average TAT
 - Target achievement
-- Outlier counts
+- Outlier counts and percentages
 - Period comparisons
-- Trend calculations
+- RO creation trends
+- YTD and previous-year comparisons
+- Process-step measures
 
-Sanitized DAX examples may be added later.
+📄 [View the DAX portfolio file](dax-measures.md)
 
 ---
 
@@ -470,7 +496,6 @@ Key benefits include:
 
 Future sanitized examples may include:
 
-- DAX measures
 - Power Query transformations
 - Synthetic procurement datasets
 - Additional architecture documentation
