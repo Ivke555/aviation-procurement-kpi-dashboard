@@ -31,7 +31,7 @@ The objective of this project was to create a consolidated analytics solution ca
 | Power BI | Dashboarding and interactive analytics |
 | DAX | KPI measures and analytical calculations |
 | SQL | Reporting layer, transformation logic and KPI preparation |
-| Power Query | Data preparation and integration |
+| Power Query | Model preparation, typing, enrichment and reporting transformations |
 | Excel | Supporting operational analysis |
 | Python | Automated refresh workflows |
 | Power Automate | Scheduled SQL refresh and reporting processes |
@@ -47,16 +47,19 @@ flowchart LR
     B --> C[Operational Business Logic]
     C --> D[KPI Reporting Tables]
     D --> E[Power Query]
-    E --> F[Power BI Data Model]
+    E --> F[Power BI Semantic Model]
 
-    F --> G[Executive KPI Dashboard]
-    F --> H[Operational Analysis]
-    F --> I[RO Trend Analysis]
+    F --> G[DAX Measures]
+    G --> H[Executive KPI Dashboard]
+    G --> I[Operational Analysis]
+    G --> J[RO Trend Analysis]
 
-    B --> J[Data Validation & Matching]
+    B --> K[Data Validation & Matching]
 ```
 
-The architecture separates operational source data from the reporting layer so that relationship logic, operational milestones and KPI calculations can be applied consistently before data reaches Power BI.
+The solution follows a layered reporting architecture.
+
+Complex operational relationships and row-level KPI logic are handled in SQL. Power Query prepares the reporting tables for the semantic model, while DAX provides interactive measures, percentages and time-intelligence calculations inside Power BI.
 
 ---
 
@@ -168,7 +171,9 @@ Repair Order KPI Layer
       ↓
 Power Query
       ↓
-Power BI Data Model
+Power BI Semantic Model
+      ↓
+DAX Measures
       ↓
 Executive & Operational Dashboards
 ```
@@ -196,7 +201,9 @@ Compare against KPI target
               ↓
 Identify outliers
               ↓
-Aggregate for Power BI
+Prepare reporting grain
+              ↓
+Aggregate interactively in Power BI
 ```
 
 Different operational processes can require different milestone logic before KPI results are produced.
@@ -323,6 +330,29 @@ This approach moves complex operational logic out of Power BI and into a reusabl
 
 ---
 
+## Power Query Portfolio Example
+
+📄 [View power-query-transformations.md](power-query-transformations.md)
+
+The Power Query layer prepares the SQL reporting datasets for the Power BI semantic model without duplicating complex upstream business logic.
+
+The sanitized examples demonstrate:
+
+- MySQL reporting-table connections
+- Selecting only required model fields
+- Explicit data-type handling
+- Reporting-level filtering
+- Business-friendly column naming
+- Open-age reporting categories
+- Sort attributes
+- Controlled dimension enrichment
+- Maintaining the correct fact-table grain
+- Separate preparation of KPI and RO-created datasets
+
+A key design principle is to **push heavy operational logic upstream into SQL** while keeping Power Query focused on model preparation and lightweight reporting transformations.
+
+---
+
 ## DAX Portfolio Example
 
 📄 [View dax-measures.md](dax-measures.md)
@@ -343,6 +373,19 @@ It demonstrates:
 - Process-step reporting using a disconnected `TAT Steps` table and `SWITCH`
 
 The implementation keeps operational relationship and row-level KPI logic in SQL while using DAX for filter-context aggregation, percentages, time intelligence and interactive report behaviour.
+
+---
+
+## Layer Responsibilities
+
+| Layer | Primary Responsibility |
+|---|---|
+| SQL | Relationships, operational milestones, reporting grain and row-level KPI logic |
+| Power Query | Model-facing cleanup, typing, enrichment and presentation attributes |
+| DAX | Filter-context aggregation, KPI percentages, time intelligence and interactive analysis |
+| Power BI | Dashboard presentation, filtering, drill-down and management reporting |
+
+Separating these responsibilities makes the reporting solution easier to maintain, validate and extend.
 
 ---
 
@@ -377,6 +420,14 @@ For example:
 
 This avoids using one analytical fact table for every business question.
 
+### Push Complex Logic Upstream
+
+Operational relationship resolution, milestone selection and row-level KPI calculations are handled in SQL.
+
+Power Query and DAX then operate on already structured reporting datasets.
+
+This reduces duplicated logic across visuals and improves consistency.
+
 ---
 
 ## Automation
@@ -408,48 +459,10 @@ aviation-procurement-kpi-dashboard/
 ├── reporting-model.sql
 ├── kpi-calculations.sql
 ├── ro-created-trend.sql
+│
+├── power-query-transformations.md
 └── dax-measures.md
 ```
-
-Additional portfolio examples may be added later.
-
----
-
-## Power Query
-
-Power Query is used as an additional transformation layer between SQL reporting datasets and the Power BI model.
-
-Typical responsibilities include:
-
-- Data type standardization
-- Column cleanup
-- Dataset integration
-- Reporting-specific filtering
-- Additional classification logic
-- Supporting analytical attributes
-
-A sanitized Power Query example may be added to the repository later.
-
----
-
-## DAX
-
-DAX provides the interactive analytical measure layer inside Power BI.
-
-The current sanitized portfolio example includes:
-
-- KPI percentages
-- Closed repair-order measures
-- Open repair-order measures
-- Average TAT
-- Target achievement
-- Outlier counts and percentages
-- Period comparisons
-- RO creation trends
-- YTD and previous-year comparisons
-- Process-step measures
-
-📄 [View the DAX portfolio file](dax-measures.md)
 
 ---
 
@@ -460,13 +473,14 @@ This project demonstrates practical experience with:
 - Power BI development
 - SQL
 - DAX
-- Power Query
+- Power Query / M
 - Data modelling
 - KPI design
 - Operational process modelling
 - Relationship resolution
 - Data-quality validation
 - Reporting architecture
+- Time-intelligence analysis
 - Process automation
 - Procurement analytics
 - Aviation supply-chain analytics
@@ -489,6 +503,7 @@ Key benefits include:
 - Reduced manual reporting work
 - Drill-down from executive KPIs to individual transactions
 - Reliable historical trend reporting
+- Reusable reporting logic outside individual Power BI visuals
 
 ---
 
@@ -496,7 +511,6 @@ Key benefits include:
 
 Future sanitized examples may include:
 
-- Power Query transformations
 - Synthetic procurement datasets
 - Additional architecture documentation
 - Automation examples
